@@ -98,14 +98,26 @@ function broadcastToRoom(roomId: string, message: any, excludeParticipantId?: st
   console.log(`Room participants: ${roomClients.map(c => c.participantId).join(', ')}`);
   console.log(`Message type: ${message.type}`);
   
+  // Debug the exact message being sent
+  if (message.type === 'voice_participant_count_changed') {
+    console.log('🎯 SENDING VOICE COUNT MESSAGE:', JSON.stringify(message, null, 2));
+  }
+  
   let successCount = 0;
   let failureCount = 0;
   
   roomClients.forEach((client, index) => {
     if (client.ws.readyState === WebSocket.OPEN) {
       try {
-        client.ws.send(JSON.stringify(message));
+        const messageStr = JSON.stringify(message);
+        client.ws.send(messageStr);
         console.log(`Message sent to client ${index + 1} (participant: ${client.participantId})`);
+        
+        // Extra debug for voice count messages
+        if (message.type === 'voice_participant_count_changed') {
+          console.log(`🎯 SENT VOICE COUNT to ${client.participantId}:`, messageStr);
+        }
+        
         successCount++;
       } catch (error) {
         console.error(`Failed to send message to client ${index + 1}:`, error);
