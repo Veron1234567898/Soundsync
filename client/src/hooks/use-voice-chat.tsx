@@ -7,6 +7,7 @@ interface VoiceChatHook {
   isDeafened: boolean;
   isConnecting: boolean;
   participants: VoiceParticipant[];
+  voiceParticipantCount: number;
   toggleMute: () => void;
   toggleDeafen: () => void;
   joinVoiceChat: (roomId: string, participantId: string) => void;
@@ -67,6 +68,7 @@ export function useVoiceChat(): VoiceChatHook {
   const [isDeafened, setIsDeafened] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [participants, setParticipants] = useState<VoiceParticipant[]>(voiceChatManager.participants);
+  const [voiceParticipantCount, setVoiceParticipantCount] = useState(0);
 
   // Use refs that directly reference the manager
   const localStreamRef = useRef<MediaStream | null>(voiceChatManager.localStream);
@@ -509,6 +511,10 @@ export function useVoiceChat(): VoiceChatHook {
       case 'voice_participant_muted':
         updateParticipantMuteStatus(message.participantId, message.isMuted);
         break;
+      case 'voice_participant_count_changed':
+        console.log('Voice participant count changed:', message.count);
+        setVoiceParticipantCount(message.count);
+        break;
     }
   }, []);
 
@@ -720,6 +726,7 @@ export function useVoiceChat(): VoiceChatHook {
     isDeafened,
     isConnecting,
     participants,
+    voiceParticipantCount,
     toggleMute,
     toggleDeafen,
     joinVoiceChat,

@@ -18,6 +18,7 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
     isDeafened,
     isConnecting,
     participants,
+    voiceParticipantCount,
     toggleMute,
     toggleDeafen,
     joinVoiceChat,
@@ -41,9 +42,9 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
             Voice Chat
           </span>
           <span className={`px-2 py-1 rounded text-xs ${
-            isConnected ? "bg-discord-green text-black" : "bg-gray-600 text-gray-300"
+            voiceParticipantCount > 0 ? "bg-discord-green text-black" : "bg-gray-600 text-gray-300"
           }`}>
-            {isConnected ? participants.length + 1 : 0} connected
+            {voiceParticipantCount} connected
           </span>
         </CardTitle>
       </CardHeader>

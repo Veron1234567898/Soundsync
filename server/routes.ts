@@ -37,6 +37,7 @@ interface WebSocketClient {
 }
 
 const clients: Map<string, WebSocketClient> = new Map();
+const voiceParticipants: Map<string, Set<string>> = new Map(); // roomId -> Set of participantIds in voice chat
 
 function generateRoomCode(): string {
   // Generate more secure room codes with better collision avoidance
@@ -206,6 +207,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'voice_join':
             console.log(`Voice join: broadcasting voice_participant_joined for ${message.participantId} to room ${message.roomId}`);
             
+            // Track voice participant
+            if (!voiceParticipants.has(message.roomId)) {
+              voiceParticipants.set(message.roomId, new Set());
+            }
+            voiceParticipants.get(message.roomId)!.add(message.participantId);
+            
             // Send confirmation to the joining participant first
             ws.send(JSON.stringify({
               type: 'voice_join_confirmed',
@@ -218,13 +225,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'voice_participant_joined',
               participantId: message.participantId
             }, message.participantId);
+            
+            // Broadcast voice participant count to ALL room participants
+            const voiceCountAfterJoin = voiceParticipants.get(message.roomId)?.size || 0;
+            broadcastToRoom(message.roomId, {
+              type: 'voice_participant_count_changed',
+              count: voiceCountAfterJoin
+            });
             break;
             
           case 'voice_leave':
+            // Remove from voice participants tracking
+            if (voiceParticipants.has(message.roomId)) {
+              voiceParticipants.get(message.roomId)!.delete(message.participantId);
+              // Clean up empty sets
+              if (voiceParticipants.get(message.roomId)!.size === 0) {
+                voiceParticipants.delete(message.roomId);
+              }
+            }
+            
             broadcastToRoom(message.roomId, {
               type: 'voice_participant_left',
               participantId: message.participantId
             }, message.participantId);
+            
+            // Broadcast updated voice participant count to ALL room participants
+            const voiceCountAfterLeave = voiceParticipants.get(message.roomId)?.size || 0;
+            broadcastToRoom(message.roomId, {
+              type: 'voice_participant_count_changed',
+              count: voiceCountAfterLeave
+            });
             break;
             
           case 'voice_offer':
@@ -284,6 +314,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const client = clients.get(clientId);
       if (client) {
         console.log(`Removing client ${clientId} from room ${client.roomId}`);
+        
+        // Clean up voice participant tracking
+        if (voiceParticipants.has(client.roomId)) {
+          const wasInVoiceChat = voiceParticipants.get(client.roomId)!.has(client.participantId);
+          voiceParticipants.get(client.roomId)!.delete(client.participantId);
+          
+          // Clean up empty sets
+          if (voiceParticipants.get(client.roomId)!.size === 0) {
+            voiceParticipants.delete(client.roomId);
+          }
+          
+          // If they were in voice chat, notify about count change
+          if (wasInVoiceChat) {
+            const voiceCountAfterDisconnect = voiceParticipants.get(client.roomId)?.size || 0;
+            broadcastToRoom(client.roomId, {
+              type: 'voice_participant_count_changed',
+              count: voiceCountAfterDisconnect
+            });
+            
+            // Also send voice participant left message
+            broadcastToRoom(client.roomId, {
+              type: 'voice_participant_left',
+              participantId: client.participantId
+            }, client.participantId);
+          }
+        }
         
         // Mark participant as inactive in storage
         try {
