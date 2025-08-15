@@ -56,8 +56,8 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
             disabled={isConnecting}
             className={cn(
               "flex-1",
-              isConnected 
-                ? "bg-red-600 hover:bg-red-700 text-white" 
+              isConnected
+                ? "bg-red-600 hover:bg-red-700 text-white"
                 : "bg-discord-green hover:bg-green-600 text-black"
             )}
             size="sm"
@@ -87,8 +87,8 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
               size="sm"
               className={cn(
                 "flex-1 border-gray-600",
-                isMuted 
-                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600" 
+                isMuted
+                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
                   : "bg-transparent hover:bg-gray-700 text-gray-300"
               )}
             >
@@ -104,15 +104,15 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
                 </>
               )}
             </Button>
-            
+
             <Button
               onClick={toggleDeafen}
               variant="outline"
               size="sm"
               className={cn(
                 "flex-1 border-gray-600",
-                isDeafened 
-                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600" 
+                isDeafened
+                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
                   : "bg-transparent hover:bg-gray-700 text-gray-300"
               )}
             >
@@ -143,13 +143,13 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
                   key={participant.participantId}
                   className="flex items-center justify-between p-2 rounded bg-discord-bg"
                 >
-                  <span className="text-sm text-gray-300">
+                  <span className="text-sm text-gray-300 flex items-center">
+                    {participant.isSpeaking && (
+                      <Mic className="w-4 h-4 mr-2 text-discord-green animate-pulse" />
+                    )}
                     Participant {participant.participantId.slice(-4)}
                   </span>
                   <div className="flex items-center space-x-1">
-                    {participant.isSpeaking && (
-                      <div className="w-2 h-2 bg-discord-green rounded-full animate-pulse" />
-                    )}
                     {participant.isMuted && (
                       <MicOff className="w-3 h-3 text-red-400" />
                     )}

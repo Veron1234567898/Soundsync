@@ -69,9 +69,10 @@ export function useVoiceChat(): VoiceChatHook {
   const [isConnecting, setIsConnecting] = useState(false);
   const [participants, setParticipants] = useState<VoiceParticipant[]>(voiceChatManager.participants);
   const [voiceParticipantCount, setVoiceParticipantCount] = useState(0);
-
+  
   // Use refs that directly reference the manager
   const localStreamRef = useRef<MediaStream | null>(voiceChatManager.localStream);
+  const localSpeakingDetectorRef = useRef<{ analyser: AnalyserNode; intervalId: NodeJS.Timeout } | null>(null);
   const connectionsRef = useRef<Map<string, RTCConnection>>(voiceChatManager.connections);
   const currentRoomRef = useRef<string | null>(voiceChatManager.currentRoom);
   const currentParticipantRef = useRef<string | null>(voiceChatManager.currentParticipant);
@@ -129,6 +130,74 @@ export function useVoiceChat(): VoiceChatHook {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
   ];
+
+  // Voice activity detection setup
+  const setupVoiceActivityDetection = useCallback((stream: MediaStream, participantId: string, isLocal: boolean) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      
+      analyser.fftSize = 512;
+      analyser.minDecibels = -90;
+      analyser.maxDecibels = -10;
+      analyser.smoothingTimeConstant = 0.85;
+      
+      source.connect(analyser);
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      let speakingThreshold = 30; // Adjust this value to change sensitivity
+      let silenceCounter = 0;
+      const silenceLimit = 3; // Number of consecutive quiet samples before considering not speaking
+      
+      const checkVoiceActivity = () => {
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        
+        const isSpeaking = average > speakingThreshold;
+        
+        if (isSpeaking) {
+          silenceCounter = 0;
+          updateParticipantSpeakingStatus(participantId, true);
+        } else {
+          silenceCounter++;
+          if (silenceCounter >= silenceLimit) {
+            updateParticipantSpeakingStatus(participantId, false);
+          }
+        }
+      };
+      
+      const intervalId = setInterval(checkVoiceActivity, 100); // Check every 100ms
+      
+      if (isLocal) {
+        localSpeakingDetectorRef.current = { analyser, intervalId };
+      }
+      
+      return { analyser, intervalId };
+    } catch (error) {
+      console.error('Failed to setup voice activity detection:', error);
+      return null;
+    }
+  }, []);
+
+  // Update participant speaking status
+  const updateParticipantSpeakingStatus = useCallback((participantId: string, isSpeaking: boolean) => {
+    setParticipants(prev => 
+      prev.map(p => 
+        p.participantId === participantId 
+          ? { ...p, isSpeaking }
+          : p
+      )
+    );
+  }, []);
 
   // Update participant mute status
   const updateParticipantMuteStatus = useCallback((participantId: string, muted: boolean) => {
@@ -205,6 +274,9 @@ export function useVoiceChat(): VoiceChatHook {
       if (existingConnection) {
         existingConnection.audioElement = audioElement;
       }
+      
+      // Set up voice activity detection for remote stream
+      setupVoiceActivityDetection(remoteStream, participantId, false);
       
       // Play the audio with better error handling
       const playAudio = async () => {
@@ -630,6 +702,9 @@ export function useVoiceChat(): VoiceChatHook {
       localStreamRef.current = stream;
       voiceChatManager.localStream = stream;
       
+      // Set up voice activity detection for local stream
+      setupVoiceActivityDetection(stream, participantId, true);
+      
       // Add a small delay to ensure WebSocket connection is stable
       await new Promise(resolve => setTimeout(resolve, 200));
       
@@ -695,6 +770,12 @@ export function useVoiceChat(): VoiceChatHook {
       });
       localStreamRef.current = null;
       voiceChatManager.localStream = null;
+    }
+
+    // Clean up local voice activity detection
+    if (localSpeakingDetectorRef.current) {
+      clearInterval(localSpeakingDetectorRef.current.intervalId);
+      localSpeakingDetectorRef.current = null;
     }
 
     // Notify server

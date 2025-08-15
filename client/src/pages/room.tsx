@@ -54,41 +54,41 @@ export default function RoomPage() {
   });
 
   const voiceChat = useVoiceChat();
-  
+
   // WebSocket connection
   const handleWebSocketMessage = useCallback((message: any) => {
     console.log('Received WebSocket message:', message.type, message);
-    
+
     // Pass voice messages to the voice chat hook
     if (message.type?.startsWith('voice_')) {
       voiceChat.handleVoiceMessage(message);
     }
-    
+
     switch (message.type) {
       case 'join_confirmed':
         console.log('Room join confirmed for participant:', message.participantId);
         break;
-        
+
       case 'participant_joined':
         console.log('PARTICIPANT JOINED WebSocket message received!', message);
         queryClient.invalidateQueries({ queryKey: ['/api/rooms', room?.id, 'participants'] });
         break;
-        
+
       case 'participant_left':
         console.log('PARTICIPANT LEFT WebSocket message received!', message);
         queryClient.invalidateQueries({ queryKey: ['/api/rooms', room?.id, 'participants'] });
         break;
-        
+
       case 'sound_played':
         const sound = sounds?.find(s => s.id === message.soundId);
         const participant = participants?.find(p => p.id === message.participantId);
-        
+
         console.log('Sound played message:', { sound, participant, sounds: sounds?.length, participants: participants?.length });
-        
+
         if (sound && participant) {
           console.log('Playing sound:', sound.name, 'by', participant.name);
           setCurrentSound({ sound, player: participant.name, progress: 0 });
-          
+
           // Play audio with better error handling
           const audio = new Audio(`/api/sounds/${sound.id}/audio`);
           audio.play().catch((error) => {
@@ -99,7 +99,7 @@ export default function RoomPage() {
               variant: "destructive",
             });
           });
-          
+
           // Simulate progress
           let progress = 0;
           const interval = setInterval(() => {
@@ -114,7 +114,7 @@ export default function RoomPage() {
           console.log('Sound or participant not found:', { soundId: message.soundId, participantId: message.participantId });
         }
         break;
-        
+
       case 'sound_uploaded':
         console.log('Received sound upload notification:', message.sound);
         queryClient.invalidateQueries({ queryKey: ['/api/rooms', room?.id, 'sounds'] });
@@ -140,7 +140,7 @@ export default function RoomPage() {
     };
 
     window.addEventListener('websocket-message', handleGlobalWebSocketMessage);
-    
+
     return () => {
       window.removeEventListener('websocket-message', handleGlobalWebSocketMessage);
     };
@@ -167,10 +167,10 @@ export default function RoomPage() {
         participantId: currentParticipant.id,
         roomId: room.id,
       };
-      
+
       // Send join message once
       sendMessage(joinMessage);
-      
+
       // Send leave message when component unmounts or participant changes
       const handleBeforeUnload = () => {
         sendMessage({
@@ -179,9 +179,9 @@ export default function RoomPage() {
           roomId: room.id,
         });
       };
-      
+
       window.addEventListener('beforeunload', handleBeforeUnload);
-      
+
       return () => {
         handleBeforeUnload();
         window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -197,7 +197,7 @@ export default function RoomPage() {
         participantId: currentParticipant.id,
         roomId: room.id,
       });
-      
+
       // Play locally immediately for better UX
       setCurrentSound({ sound, player: currentParticipant.name, progress: 0 });
       const audio = new Audio(`/api/sounds/${sound.id}/audio`);
@@ -317,9 +317,10 @@ export default function RoomPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <RoomParticipants
-              participants={participants}
+              participants={participants || []}
               currentParticipantId={currentParticipant?.id}
-              onInvite={copyRoomCode}
+              onInvite={() => setShowInviteDialog(true)}
+              voiceParticipants={voiceChat.participants}
             />
 
             {/* Voice Chat */}
