@@ -108,9 +108,15 @@ export function useVoiceChat(): VoiceChatHook {
   
   const { sendMessage } = useWebSocket({
     onMessage: (message) => {
+      // Log ALL messages to see what we're getting
+      console.log('🔄 WebSocket message received:', message.type, message);
+      
       // Log all messages for debugging
-      if (message.type?.startsWith('voice_')) {
-        console.log('WebSocket received voice message:', message.type, message);
+      if (message.type?.startsWith('voice_') || message.type === 'voice_participant_count_changed') {
+        console.log('📨 WebSocket received voice message:', message.type, message);
+      }
+      if (message.type === 'voice_participant_count_changed') {
+        console.log('🎯 Direct voice count message received in hook:', message);
       }
       if (handleVoiceMessageRef.current) {
         handleVoiceMessageRef.current(message);
@@ -447,7 +453,9 @@ export function useVoiceChat(): VoiceChatHook {
       console.log('Voice message received:', message.type, message);
     }
     
-    if (!message.type?.startsWith('voice_')) return;
+    if (!message.type?.startsWith('voice_') && message.type !== 'voice_participant_count_changed') {
+      return;
+    }
     
     // Always sync refs with manager before processing
     currentParticipantRef.current = voiceChatManager.currentParticipant;
@@ -512,8 +520,15 @@ export function useVoiceChat(): VoiceChatHook {
         updateParticipantMuteStatus(message.participantId, message.isMuted);
         break;
       case 'voice_participant_count_changed':
-        console.log('Voice participant count changed:', message.count);
+        console.log('🔄 Voice participant count changed:', message.count);
+        console.log('⏰ Current voice participant count state:', voiceParticipantCount);
         setVoiceParticipantCount(message.count);
+        console.log('📊 Voice chat state after count update:', {
+          newCount: message.count,
+          isConnected: voiceChatManager.isConnected,
+          currentParticipant: voiceChatManager.currentParticipant,
+          currentRoom: voiceChatManager.currentRoom
+        });
         break;
     }
   }, []);

@@ -63,6 +63,11 @@ export function useWebSocket({ onMessage }: UseWebSocketProps) {
             const message = JSON.parse(event.data);
             console.log("Raw WebSocket message received:", message);
             
+            // Special debug for voice count messages
+            if (message.type === 'voice_participant_count_changed') {
+              console.log('🎯 VOICE COUNT MESSAGE RECEIVED in websocket:', message);
+            }
+            
             // Store the message for any listeners that might be registered later
             if (message.type) {
               // Broadcast to all current listeners
