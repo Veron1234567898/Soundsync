@@ -2,17 +2,19 @@ export class AudioManager {
   private audioElements: Map<string, HTMLAudioElement> = new Map();
   private masterVolume: number = 0.75;
 
-  async loadSound(soundId: string, url: string): Promise<HTMLAudioElement> {
+  async loadSound(soundId: string, url: string, preloadFully = false): Promise<HTMLAudioElement> {
     if (this.audioElements.has(soundId)) {
       return this.audioElements.get(soundId)!;
     }
 
     const audio = new Audio(url);
     audio.volume = this.masterVolume;
-    audio.preload = 'metadata';
+    audio.preload = preloadFully ? 'auto' : 'metadata';
     
     return new Promise((resolve, reject) => {
-      audio.addEventListener('canplaythrough', () => {
+      const eventToWaitFor = preloadFully ? 'canplaythrough' : 'loadedmetadata';
+      
+      audio.addEventListener(eventToWaitFor, () => {
         this.audioElements.set(soundId, audio);
         resolve(audio);
       }, { once: true });
@@ -67,9 +69,18 @@ export class AudioManager {
   preloadSounds(sounds: Array<{ id: string; url: string }>): Promise<void[]> {
     return Promise.all(
       sounds.map(sound => 
-        this.loadSound(sound.id, sound.url).then(() => {}).catch(console.error)
+        this.loadSound(sound.id, sound.url, true).then(() => {}).catch(console.error)
       )
     );
+  }
+
+  // Preload a single sound for instant playback
+  async preloadSound(soundId: string, url: string): Promise<void> {
+    try {
+      await this.loadSound(soundId, url, true);
+    } catch (error) {
+      console.error('Failed to preload sound:', error);
+    }
   }
 }
 

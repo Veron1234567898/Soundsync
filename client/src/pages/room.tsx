@@ -13,6 +13,9 @@ import { VoiceChatPanel } from "@/components/voice-chat-panel";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useVoiceChat } from "@/hooks/use-voice-chat";
 import type { Room, Participant, Sound } from "@shared/schema";
+import { AudioManager } from "@/lib/audioManager"; // Assuming AudioManager is in lib/audioManager
+
+const audioManager = new AudioManager();
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -30,9 +33,15 @@ export default function RoomPage() {
   });
 
   // Fetch sounds
-  const { data: sounds = [], isLoading: soundsLoading } = useQuery<Sound[]>({
+  const { data: sounds = [], isLoading: soundsLoading, refetch: refetchSounds } = useQuery<Sound[]>({
     queryKey: ['/api/rooms', room?.id, 'sounds'],
     enabled: !!room?.id,
+    onSuccess: (sounds) => {
+      // Preload all sounds for instant playback
+      sounds.forEach((sound: Sound) => {
+        audioManager.preloadSound(sound.id, `/api/sounds/${sound.id}/audio`);
+      });
+    },
   });
 
   // Fetch participants
@@ -90,8 +99,7 @@ export default function RoomPage() {
           setCurrentSound({ sound, player: participant.name, progress: 0 });
 
           // Play audio with better error handling
-          const audio = new Audio(`/api/sounds/${sound.id}/audio`);
-          audio.play().catch((error) => {
+          audioManager.playSound(sound.id).catch((error) => {
             console.error('Failed to play audio:', error);
             toast({
               title: "Audio Playback Failed",
@@ -103,8 +111,11 @@ export default function RoomPage() {
           // Simulate progress
           let progress = 0;
           const interval = setInterval(() => {
-            progress += 100 / (sound.duration / 100);
-            setCurrentSound(prev => prev ? { ...prev, progress } : null);
+            // The duration calculation might need to be more precise or fetched if not readily available
+            // For now, assuming a fixed duration for simulation or using sound.duration if available and reliable
+            const duration = sound.duration || 5000; // Fallback to 5 seconds if duration is not provided
+            progress += 1000 / (duration / 100); // Increment progress based on playback time
+            setCurrentSound(prev => prev ? { ...prev, progress: Math.min(progress, 100) } : null);
             if (progress >= 100) {
               clearInterval(interval);
               setTimeout(() => setCurrentSound(null), 500);
@@ -117,14 +128,16 @@ export default function RoomPage() {
 
       case 'sound_uploaded':
         console.log('Received sound upload notification:', message.sound);
-        queryClient.invalidateQueries({ queryKey: ['/api/rooms', room?.id, 'sounds'] });
+        // Preload the new sound immediately for instant playback
+        audioManager.preloadSound(message.sound.id, `/api/sounds/${message.sound.id}/audio`);
+        refetchSounds();
         toast({
           title: "New Sound Added",
           description: `${message.sound.name} was uploaded`,
         });
         break;
     }
-  }, [voiceChat, queryClient, room?.id, sounds, participants, toast]);
+  }, [voiceChat, queryClient, room?.id, sounds, participants, toast, refetchSounds]);
 
   const { sendMessage } = useWebSocket({
     onMessage: handleWebSocketMessage,
@@ -200,8 +213,7 @@ export default function RoomPage() {
 
       // Play locally immediately for better UX
       setCurrentSound({ sound, player: currentParticipant.name, progress: 0 });
-      const audio = new Audio(`/api/sounds/${sound.id}/audio`);
-      audio.play().catch(console.error);
+      audioManager.playSound(sound.id).catch(console.error);
     }
   };
 
