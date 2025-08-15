@@ -94,12 +94,12 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
             >
               {isMuted ? (
                 <>
-                  <MicOff className="w-4 h-4 mr-2" />
+                  <MicOff className="w-5 h-5 mr-2" />
                   Muted
                 </>
               ) : (
                 <>
-                  <Mic className="w-4 h-4 mr-2" />
+                  <Mic className="w-5 h-5 mr-2" />
                   Mic
                 </>
               )}
@@ -145,13 +145,13 @@ export function VoiceChatPanel({ roomId, participantId, isHost }: VoiceChatPanel
                 >
                   <span className="text-sm text-gray-300 flex items-center">
                     {participant.isSpeaking && (
-                      <Mic className="w-4 h-4 mr-2 text-discord-green animate-pulse" />
+                      <Mic className="w-6 h-6 mr-2 text-discord-green animate-pulse" />
                     )}
                     Participant {participant.participantId.slice(-4)}
                   </span>
                   <div className="flex items-center space-x-1">
                     {participant.isMuted && (
-                      <MicOff className="w-3 h-3 text-red-400" />
+                      <MicOff className="w-4 h-4 text-red-400" />
                     )}
                   </div>
                 </div>
