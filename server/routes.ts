@@ -59,6 +59,36 @@ async function getAudioDuration(filePath: string): Promise<number> {
   }
 }
 
+async function addDefaultSounds(roomId: string, hostId: string): Promise<void> {
+  const defaultSounds = [
+    { name: 'Yo Phone Lining', fileName: 'default-yo-phone-lining.mp3' },
+    { name: 'Tuco Get Out', fileName: 'default-tuco-get-out.mp3' },
+    { name: 'Sad Meow Song', fileName: 'default-sad-meow-song.mp3' },
+    { name: 'Panjabi MC Mundian', fileName: 'default-panjabi-mc-mundian.mp3' }
+  ];
+
+  for (const defaultSound of defaultSounds) {
+    try {
+      const filePath = path.join(uploadDir, defaultSound.fileName);
+      if (fs.existsSync(filePath)) {
+        const duration = await getAudioDuration(filePath);
+        await storage.createSound({
+          name: defaultSound.name,
+          fileName: defaultSound.fileName,
+          duration,
+          roomId,
+          uploadedBy: hostId
+        });
+        console.log(`Added default sound: ${defaultSound.name}`);
+      } else {
+        console.warn(`Default sound file not found: ${defaultSound.fileName}`);
+      }
+    } catch (error) {
+      console.error(`Failed to add default sound ${defaultSound.name}:`, error);
+    }
+  }
+}
+
 function broadcastToRoom(roomId: string, message: any, excludeParticipantId?: string) {
   const roomClients = Array.from(clients.values())
     .filter(client => client.roomId === roomId && client.participantId !== excludeParticipantId);
@@ -308,6 +338,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isHost: true,
         isActive: true
       });
+      
+      // Add default sounds to the new room
+      await addDefaultSounds(room.id, hostId);
       
       res.json(room);
     } catch (error) {
