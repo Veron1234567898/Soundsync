@@ -13,7 +13,7 @@ import { VoiceChatPanel } from "@/components/voice-chat-panel";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useVoiceChat } from "@/hooks/use-voice-chat";
 import type { Room, Participant, Sound } from "@shared/schema";
-import { AudioManager } from "@/lib/audioManager"; // Assuming AudioManager is in lib/audioManager
+import { AudioManager } from "@/lib/audio";
 
 const audioManager = new AudioManager();
 
