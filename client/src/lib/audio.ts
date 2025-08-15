@@ -10,19 +10,28 @@ export class AudioManager {
     const audio = new Audio(url);
     audio.volume = this.masterVolume;
     audio.preload = preloadFully ? 'auto' : 'metadata';
+    audio.crossOrigin = 'anonymous'; // Help with CORS issues
     
     return new Promise((resolve, reject) => {
       const eventToWaitFor = preloadFully ? 'canplaythrough' : 'loadedmetadata';
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Audio loading timeout'));
+      }, 10000); // 10 second timeout
       
       audio.addEventListener(eventToWaitFor, () => {
+        clearTimeout(timeoutId);
         this.audioElements.set(soundId, audio);
         resolve(audio);
       }, { once: true });
       
       audio.addEventListener('error', (error) => {
+        clearTimeout(timeoutId);
         console.error('Audio loading error:', error);
         reject(new Error(`Failed to load audio: ${error.type || 'Unknown error'}`));
       }, { once: true });
+
+      // Start loading
+      audio.load();
     });
   }
 
@@ -30,13 +39,34 @@ export class AudioManager {
     let audio = this.audioElements.get(soundId);
     
     if (!audio && url) {
-      audio = await this.loadSound(soundId, url);
+      try {
+        audio = await this.loadSound(soundId, url, false); // Load quickly for immediate playback
+      } catch (error) {
+        console.error(`Failed to load sound ${soundId}:`, error);
+        throw error;
+      }
     }
     
     if (audio) {
-      audio.currentTime = 0;
-      audio.volume = this.masterVolume;
-      return audio.play();
+      try {
+        audio.currentTime = 0;
+        audio.volume = this.masterVolume;
+        
+        // Clone the audio element if it's already playing to allow overlapping sounds
+        if (!audio.paused) {
+          const clonedAudio = audio.cloneNode() as HTMLAudioElement;
+          clonedAudio.volume = this.masterVolume;
+          clonedAudio.currentTime = 0;
+          return clonedAudio.play();
+        }
+        
+        return audio.play();
+      } catch (playError) {
+        console.error(`Failed to play sound ${soundId}:`, playError);
+        throw playError;
+      }
+    } else {
+      throw new Error(`Sound ${soundId} not found and no URL provided`);
     }
   }
 

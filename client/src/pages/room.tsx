@@ -21,6 +21,7 @@ export default function RoomPage() {
   const { roomCode } = useParams();
   const [, setLocation] = useLocation();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
   const [currentSound, setCurrentSound] = useState<{ sound: Sound; player: string; progress: number } | null>(null);
   const { toast } = useToast();
@@ -39,7 +40,9 @@ export default function RoomPage() {
     onSuccess: (sounds) => {
       // Preload all sounds for instant playback
       sounds.forEach((sound: Sound) => {
-        audioManager.preloadSound(sound.id, `/api/sounds/${sound.id}/audio`);
+        audioManager.preloadSound(sound.id, `/api/sounds/${sound.id}/audio`).catch((error) => {
+          console.warn(`Failed to preload sound ${sound.name}:`, error);
+        });
       });
     },
   });
@@ -204,16 +207,26 @@ export default function RoomPage() {
 
   const handlePlaySound = (sound: Sound) => {
     if (currentParticipant && room) {
+      // Play locally immediately for better UX
+      setCurrentSound({ sound, player: currentParticipant.name, progress: 0 });
+      
+      // Try to play immediately, fallback to loading if not preloaded
+      audioManager.playSound(sound.id, `/api/sounds/${sound.id}/audio`).catch((error) => {
+        console.error('Failed to play audio:', error);
+        toast({
+          title: "Audio Playback Failed",
+          description: `Could not play ${sound.name}. The file may be corrupted or in an unsupported format.`,
+          variant: "destructive",
+        });
+      });
+
+      // Send message to other participants
       sendMessage({
         type: 'play_sound',
         soundId: sound.id,
         participantId: currentParticipant.id,
         roomId: room.id,
       });
-
-      // Play locally immediately for better UX
-      setCurrentSound({ sound, player: currentParticipant.name, progress: 0 });
-      audioManager.playSound(sound.id).catch(console.error);
     }
   };
 
