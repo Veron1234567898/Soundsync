@@ -117,6 +117,72 @@
   }
 }
 
+/* Default sounds - gradient styles */
+.sound-button-purple-gradient {
+  background: linear-gradient(135deg, var(--discord-purple), hsl(235.7 85.6% 45%));
+}
+
+.sound-button-purple-gradient:hover {
+  background: linear-gradient(135deg, hsl(235.7 85.6% 60%), hsl(235.7 85.6% 40%));
+}
+
+.sound-button-green-gradient {
+  background: linear-gradient(135deg, var(--discord-green), hsl(132.9 64.3% 40%));
+}
+
+.sound-button-green-gradient:hover {
+  background: linear-gradient(135deg, hsl(132.9 64.3% 60%), hsl(132.9 64.3% 35%));
+}
+
+.sound-button-red-gradient {
+  background: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 40%));
+}
+
+.sound-button-red-gradient:hover {
+  background: linear-gradient(135deg, hsl(0 84% 55%), hsl(0 84% 35%));
+}
+
+.sound-button-yellow-gradient {
+  background: linear-gradient(135deg, var(--discord-accent), hsl(49.4 100% 50%));
+}
+
+.sound-button-yellow-gradient:hover {
+  background: linear-gradient(135deg, hsl(49.4 100% 62%), hsl(49.4 100% 45%));
+}
+
+.sound-button-indigo-gradient {
+  background: linear-gradient(135deg, hsl(243 75% 59%), hsl(243 75% 40%));
+}
+
+.sound-button-indigo-gradient:hover {
+  background: linear-gradient(135deg, hsl(243 75% 54%), hsl(243 75% 35%));
+}
+
+.sound-button-pink-gradient {
+  background: linear-gradient(135deg, hsl(330 81% 60%), hsl(330 81% 40%));
+}
+
+.sound-button-pink-gradient:hover {
+  background: linear-gradient(135deg, hsl(330 81% 55%), hsl(330 81% 35%));
+}
+
+.sound-button-teal-gradient {
+  background: linear-gradient(135deg, hsl(178 60% 50%), hsl(178 60% 30%));
+}
+
+.sound-button-teal-gradient:hover {
+  background: linear-gradient(135deg, hsl(178 60% 45%), hsl(178 60% 25%));
+}
+
+.sound-button-orange-gradient {
+  background: linear-gradient(135deg, hsl(25 95% 53%), hsl(25 95% 35%));
+}
+
+.sound-button-orange-gradient:hover {
+  background: linear-gradient(135deg, hsl(25 95% 48%), hsl(25 95% 30%));
+}
+
+/* Uploaded sounds - solid colors */
 .sound-button-purple {
   background-color: var(--discord-purple);
 }

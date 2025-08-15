@@ -9,7 +9,7 @@ interface SoundboardGridProps {
   onPlaySound: (sound: Sound) => void;
 }
 
-const colorClasses = [
+const solidColorClasses = [
   "sound-button-purple",
   "sound-button-green", 
   "sound-button-red",
@@ -18,6 +18,17 @@ const colorClasses = [
   "sound-button-pink",
   "sound-button-teal",
   "sound-button-orange",
+];
+
+const gradientColorClasses = [
+  "sound-button-purple-gradient",
+  "sound-button-green-gradient", 
+  "sound-button-red-gradient",
+  "sound-button-yellow-gradient",
+  "sound-button-indigo-gradient",
+  "sound-button-pink-gradient",
+  "sound-button-teal-gradient",
+  "sound-button-orange-gradient",
 ];
 
 export default function SoundboardGrid({ sounds, isLoading, onPlaySound }: SoundboardGridProps) {
@@ -56,6 +67,9 @@ export default function SoundboardGrid({ sounds, isLoading, onPlaySound }: Sound
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {sounds.map((sound, index) => {
+              // Check if this is a default sound by looking at the fileName
+              const isDefaultSound = sound.fileName?.startsWith('default-');
+              const colorClasses = isDefaultSound ? gradientColorClasses : solidColorClasses;
               const colorClass = colorClasses[index % colorClasses.length];
               const isGreenOrYellow = colorClass.includes('green') || colorClass.includes('yellow');
               
