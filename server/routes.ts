@@ -65,7 +65,13 @@ async function addDefaultSounds(roomId: string, hostId: string): Promise<void> {
     { name: 'Yo Phone Lining', fileName: 'default-yo-phone-lining.mp3' },
     { name: 'Tuco Get Out', fileName: 'default-tuco-get-out.mp3' },
     { name: 'Sad Meow Song', fileName: 'default-sad-meow-song.mp3' },
-    { name: 'Panjabi MC Mundian', fileName: 'default-panjabi-mc-mundian.mp3' }
+    { name: 'Panjabi MC Mundian', fileName: 'default-panjabi-mc-mundian.mp3' },
+    { name: 'Y2mate Sound', fileName: 'default-y2mate.mp3' },
+    { name: 'Rat Dance Music', fileName: 'default-rat-dance-music.mp3' },
+    { name: 'Peter Griffin', fileName: 'default-peter-griffin.mp3' },
+    { name: 'Gayy Echo', fileName: 'default-gayy-echo.mp3' },
+    { name: 'Fart Meme', fileName: 'default-fartmeme.mp3' },
+    { name: 'Baby Laughing Meme', fileName: 'default-baby-laughing-meme.mp3' }
   ];
 
   for (const defaultSound of defaultSounds) {
