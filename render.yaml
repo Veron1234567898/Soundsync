@@ -1,0 +1,24 @@
+databases:
+  - name: soundboard-db
+    databaseName: soundboard_production
+    user: soundboard_user
+    plan: free
+
+services:
+  - type: web
+    name: soundboard-app
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    runtime: node
+    rootDir: .
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: soundboard-db
+          property: connectionString
