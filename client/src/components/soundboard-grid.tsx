@@ -69,7 +69,7 @@ export default function SoundboardGrid({ sounds, isLoading, onPlaySound }: Sound
             {sounds.map((sound, index) => {
               // Check if this is a default sound by looking at the fileName
               const isDefaultSound = sound.fileName?.startsWith('default-');
-              const colorClasses = isDefaultSound ? solidColorClasses : gradientColorClasses;
+              const colorClasses = isDefaultSound ? gradientColorClasses : solidColorClasses;
               const colorClass = colorClasses[index % colorClasses.length];
               const isGreenOrYellow = colorClass.includes('green') || colorClass.includes('yellow');
               
