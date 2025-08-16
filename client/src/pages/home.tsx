@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Volume2, Users, Plus, Globe, Lock, RefreshCw } from "lucide-react";
 import type { Room } from "@shared/schema";
+import { ServerInfo } from "@/components/server-info";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -237,8 +238,13 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Public Server List */}
+        {/* Server Information */}
         <div className="mt-12">
+          <ServerInfo />
+        </div>
+
+        {/* Public Server List */}
+        <div className="mt-8">
           <Card className="bg-discord-card border-gray-600">
             <CardHeader>
               <div className="flex items-center justify-between">

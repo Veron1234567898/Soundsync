@@ -519,6 +519,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ping endpoint for latency measurement
+  app.head('/api/ping', (req, res) => {
+    res.status(200).end();
+  });
+
+  app.get('/api/ping', (req, res) => {
+    res.json({ timestamp: Date.now(), status: 'ok' });
+  });
+
   // Clean up inactive rooms
   app.delete('/api/rooms/cleanup', async (req, res) => {
     try {
