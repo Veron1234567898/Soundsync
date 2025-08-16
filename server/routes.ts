@@ -502,7 +502,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/rooms/public', async (req, res) => {
     try {
       const publicRooms = await storage.getPublicRooms();
-      res.json(publicRooms);
+      // Add participant count to each room
+      const roomsWithParticipantCount = await Promise.all(
+        publicRooms.map(async (room) => {
+          const participants = await storage.getParticipantsByRoomId(room.id);
+          const activeParticipants = participants.filter(p => p.isActive);
+          return {
+            ...room,
+            participantCount: activeParticipants.length
+          };
+        })
+      );
+      res.json(roomsWithParticipantCount);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }

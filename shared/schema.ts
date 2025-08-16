@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { InferSelectModel } from "drizzle-orm";
 
 export const rooms = pgTable("rooms", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -48,7 +49,9 @@ export const insertParticipantSchema = createInsertSchema(participants).omit({
 });
 
 export type InsertRoom = z.infer<typeof insertRoomSchema>;
-export type Room = typeof rooms.$inferSelect;
+export type Room = InferSelectModel<typeof rooms> & {
+  participantCount?: number;
+};
 export type InsertSound = z.infer<typeof insertSoundSchema>;
 export type Sound = typeof sounds.$inferSelect;
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;

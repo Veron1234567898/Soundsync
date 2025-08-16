@@ -77,7 +77,7 @@ export default function Home() {
       });
       return;
     }
-    
+
     const hostId = userName || "Host";
     createRoomMutation.mutate({ name: roomName, hostId, isPublic });
   };
@@ -91,7 +91,7 @@ export default function Home() {
       });
       return;
     }
-    
+
     joinRoomMutation.mutate(joinCode.toUpperCase());
   };
 
@@ -271,23 +271,29 @@ export default function Home() {
                       }}
                       data-testid={`card-public-room-${room.code}`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-discord-green/20 p-2 rounded-full">
-                          <Volume2 className="h-4 w-4 text-discord-green" />
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-discord-purple rounded-lg flex items-center justify-center mr-3">
+                          <Volume2 className="w-5 h-5 text-white" />
                         </div>
                         <div>
                           <h3 className="font-medium text-white">{room.name}</h3>
                           <p className="text-sm text-gray-400">Code: {room.code} • Host: {room.hostId}</p>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black"
-                        data-testid={`button-join-${room.code}`}
-                      >
-                        Join
-                      </Button>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-1">
+                          <Users className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-400">{room.participantCount || 0}</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black"
+                          data-testid={`button-join-${room.code}`}
+                        >
+                          Join
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
