@@ -474,33 +474,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('Client IP for room creation:', clientIP);
         
+        // Clean up IP if it contains multiple IPs (proxy chain)
+        const cleanIP = clientIP ? clientIP.toString().split(',')[0].trim() : null;
+        console.log('Cleaned IP:', cleanIP);
+        
         // Only try to get location for non-local IPs
-        if (clientIP && !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(clientIP.toString())) {
-          const locationResponse = await fetch(`https://ipapi.co/${clientIP}/json/`);
+        if (cleanIP && !['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost'].includes(cleanIP)) {
+          console.log('Fetching location data for IP:', cleanIP);
+          const locationResponse = await fetch(`https://ipapi.co/${cleanIP}/json/`, {
+            timeout: 5000 // 5 second timeout
+          });
+          
           if (locationResponse.ok) {
             const locationData = await locationResponse.json();
+            console.log('Raw location data:', locationData);
+            
+            // Check for API error responses
+            if (locationData.error) {
+              console.warn('Location API error:', locationData.reason);
+              throw new Error(`Location API error: ${locationData.reason}`);
+            }
+            
             hostLocation = {
-              hostCountry: locationData.country_name || null,
-              hostRegion: locationData.region || null,
+              hostCountry: locationData.country_name || locationData.country || "Unknown Country",
+              hostRegion: locationData.region || locationData.region_code || null,
               hostCity: locationData.city || null
             };
             console.log('Host location detected:', hostLocation);
+          } else {
+            console.warn('Location API response not OK:', locationResponse.status);
+            throw new Error(`Location API returned ${locationResponse.status}`);
           }
         } else {
-          console.log('Local IP detected, using default location');
+          console.log('Local/invalid IP detected, using development location');
           hostLocation = {
-            hostCountry: "Local Network",
-            hostRegion: "Replit",
-            hostCity: "Development"
+            hostCountry: "Development Server",
+            hostRegion: "Replit Cloud",
+            hostCity: "Virtual"
           };
         }
       } catch (error) {
-        console.warn('Failed to get host location:', error);
-        // Use default values for location
+        console.warn('Failed to get host location:', error.message);
+        // Use more descriptive default values
         hostLocation = {
-          hostCountry: "Unknown",
-          hostRegion: null,
-          hostCity: null
+          hostCountry: "Server Location Unknown",
+          hostRegion: "Unable to detect",
+          hostCity: "Check connection"
         };
       }
       
