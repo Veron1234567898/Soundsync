@@ -15,6 +15,8 @@ Preferred communication style: Simple, everyday language.
 - **Public Server List**: Implemented public server discovery and listing functionality
 - **API Enhancement**: Added `/api/rooms/public` endpoint for retrieving public rooms
 - **UI Enhancement**: Added toggle switch for room visibility and public server list display
+- **Schema Update**: Added `isPublic` boolean field to rooms table for room visibility control
+- **Frontend Enhancement**: Public rooms are displayed in a discoverable server list on the home page
 
 ## System Architecture
 
