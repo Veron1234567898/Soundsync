@@ -557,6 +557,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete ALL rooms (nuclear option)
+  app.delete('/api/rooms/cleanup/all', async (req, res) => {
+    try {
+      console.log('Starting nuclear cleanup - deleting ALL rooms...');
+      const allRooms = await storage.getAllRooms();
+      let deletedCount = 0;
+      
+      for (const room of allRooms) {
+        console.log(`Force deleting room: ${room.code} (${room.name})`);
+        await storage.deleteRoom(room.id);
+        
+        // Clean up any remaining data structures
+        voiceParticipants.delete(room.id);
+        roomCleanupTimers.delete(room.id);
+        
+        // Remove any dead connections for this room
+        Array.from(clients.entries()).forEach(([clientId, client]) => {
+          if (client.roomId === room.id) {
+            clients.delete(clientId);
+          }
+        });
+        
+        deletedCount++;
+      }
+      
+      // Clear all remaining data structures
+      clients.clear();
+      voiceParticipants.clear();
+      roomCleanupTimers.clear();
+      
+      console.log(`Nuclear cleanup completed: ${deletedCount} rooms deleted`);
+      res.json({ message: `Deleted ALL ${deletedCount} rooms` });
+    } catch (error) {
+      console.error('Error during nuclear cleanup:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   app.get('/api/rooms/:code', async (req, res) => {
     try {
       const room = await storage.getRoomByCode(req.params.code);
