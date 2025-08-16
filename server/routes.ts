@@ -519,6 +519,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clean up inactive rooms
+  app.delete('/api/rooms/cleanup', async (req, res) => {
+    try {
+      console.log('Starting manual room cleanup...');
+      const allRooms = await storage.getAllRooms();
+      let deletedCount = 0;
+      
+      for (const room of allRooms) {
+        const participants = await storage.getParticipantsByRoomId(room.id);
+        const hasActiveParticipants = participants.some(p => p.isActive);
+        
+        if (!hasActiveParticipants) {
+          console.log(`Deleting inactive room: ${room.code} (${room.name})`);
+          await storage.deleteRoom(room.id);
+          
+          // Clean up any remaining data structures
+          voiceParticipants.delete(room.id);
+          roomCleanupTimers.delete(room.id);
+          
+          // Remove any dead connections for this room
+          Array.from(clients.entries()).forEach(([clientId, client]) => {
+            if (client.roomId === room.id) {
+              clients.delete(clientId);
+            }
+          });
+          
+          deletedCount++;
+        }
+      }
+      
+      console.log(`Manual cleanup completed: ${deletedCount} rooms deleted`);
+      res.json({ message: `Cleaned up ${deletedCount} inactive rooms` });
+    } catch (error) {
+      console.error('Error during manual cleanup:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   app.get('/api/rooms/:code', async (req, res) => {
     try {
       const room = await storage.getRoomByCode(req.params.code);

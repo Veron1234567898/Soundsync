@@ -66,7 +66,7 @@ export class MemStorage implements IStorage {
         this.cleanupAudioFile(sound.fileName);
         this.sounds.delete(sound.id);
       });
-    
+
     Array.from(this.participants.values())
       .filter(participant => participant.roomId === id)
       .forEach(participant => this.participants.delete(participant.id));
@@ -143,7 +143,7 @@ export class MemStorage implements IStorage {
     if (!participant) {
       return undefined;
     }
-    
+
     const updatedParticipant = { ...participant, ...updates };
     this.participants.set(id, updatedParticipant);
     return updatedParticipant;
@@ -183,15 +183,19 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(rooms).where(eq(rooms.isPublic, true));
   }
 
+  async getAllRooms(): Promise<Room[]> {
+    return await db.select().from(rooms);
+  }
+
   async deleteRoom(id: string): Promise<void> {
     // First get all sounds to clean up files
     const roomSounds = await db.select().from(sounds).where(eq(sounds.roomId, id));
-    
+
     // Clean up audio files
     for (const sound of roomSounds) {
       this.cleanupAudioFile(sound.fileName);
     }
-    
+
     // Delete related data (foreign key constraints will handle this automatically)
     await db.delete(participants).where(eq(participants.roomId, id));
     await db.delete(sounds).where(eq(sounds.roomId, id));
@@ -259,7 +263,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`Skipping deletion of default sound file: ${fileName}`);
       return;
     }
-    
+
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
