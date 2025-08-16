@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Room routes
   app.post('/api/rooms', async (req, res) => {
     try {
-      const { name, hostId } = insertRoomSchema.parse(req.body);
+      const roomData = insertRoomSchema.parse(req.body);
       
       // Check for duplicate room codes and regenerate if needed
       let code: string;
@@ -403,22 +403,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('Generated unique room code:', code);
-      const room = await storage.createRoom({ name, code, hostId });
+      const room = await storage.createRoom({ 
+        name: roomData.name, 
+        code, 
+        hostId: roomData.hostId,
+        isPublic: roomData.isPublic || false
+      });
       
       // Create host participant with the actual host name
       await storage.createParticipant({
-        name: hostId,
+        name: roomData.hostId,
         roomId: room.id,
         isHost: true,
         isActive: true
       });
       
       // Add default sounds to the new room
-      await addDefaultSounds(room.id, hostId);
+      await addDefaultSounds(room.id, roomData.hostId);
       
       res.json(room);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Get all public rooms for server list
+  app.get('/api/rooms/public', async (req, res) => {
+    try {
+      const publicRooms = await storage.getPublicRooms();
+      res.json(publicRooms);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 

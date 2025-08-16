@@ -8,19 +8,13 @@ A real-time collaborative soundboard application built with React, Express.js, a
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Migration Updates (Aug 15, 2025)
+## Recent Migration Updates (Aug 16, 2025)
 - **Migration Status**: Successfully migrated from Replit Agent to Replit environment
-- **Database**: PostgreSQL database configured and schema deployed
-- **Deployment Fix**: Resolved Vercel deployment conflicts with Railway database
-- **File Conflicts**: Removed duplicate API files (`api/index.js`, `api/server.js`) causing Vercel build errors
-- **Integration**: Updated API endpoints for proper Railway database connection
-
-## Recent Migration Updates (Aug 15, 2025)
-- **Migration Status**: Successfully migrated from Replit Agent to Replit environment
-- **Database**: PostgreSQL database configured and schema deployed
-- **Deployment Fix**: Resolved Vercel deployment conflicts with Railway database
-- **File Conflicts**: Removed duplicate API files (`api/index.js`, `api/server.js`) causing Vercel build errors
-- **Integration**: Updated API endpoints for proper Railway database connection
+- **Database**: PostgreSQL database configured and schema deployed with new public/private room feature
+- **New Feature**: Added public/private room visibility setting
+- **Public Server List**: Implemented public server discovery and listing functionality
+- **API Enhancement**: Added `/api/rooms/public` endpoint for retrieving public rooms
+- **UI Enhancement**: Added toggle switch for room visibility and public server list display
 
 ## System Architecture
 

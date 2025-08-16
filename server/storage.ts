@@ -8,6 +8,7 @@ export interface IStorage {
   createRoom(room: InsertRoom & { code: string }): Promise<Room>;
   getRoomByCode(code: string): Promise<Room | undefined>;
   getRoomById(id: string): Promise<Room | undefined>;
+  getPublicRooms(): Promise<Room[]>;
   deleteRoom(id: string): Promise<void>;
 
   // Sound methods
@@ -36,6 +37,7 @@ export class MemStorage implements IStorage {
       name: insertRoom.name,
       code: insertRoom.code,
       hostId: insertRoom.hostId,
+      isPublic: insertRoom.isPublic || false,
       createdAt: new Date(),
     };
     this.rooms.set(id, room);
@@ -48,6 +50,10 @@ export class MemStorage implements IStorage {
 
   async getRoomById(id: string): Promise<Room | undefined> {
     return this.rooms.get(id);
+  }
+
+  async getPublicRooms(): Promise<Room[]> {
+    return Array.from(this.rooms.values()).filter(room => room.isPublic);
   }
 
   async deleteRoom(id: string): Promise<void> {
@@ -157,6 +163,7 @@ export class DatabaseStorage implements IStorage {
         name: insertRoom.name,
         code: insertRoom.code,
         hostId: insertRoom.hostId,
+        isPublic: insertRoom.isPublic || false,
       })
       .returning();
     return room;
@@ -170,6 +177,10 @@ export class DatabaseStorage implements IStorage {
   async getRoomById(id: string): Promise<Room | undefined> {
     const [room] = await db.select().from(rooms).where(eq(rooms.id, id));
     return room || undefined;
+  }
+
+  async getPublicRooms(): Promise<Room[]> {
+    return await db.select().from(rooms).where(eq(rooms.isPublic, true));
   }
 
   async deleteRoom(id: string): Promise<void> {

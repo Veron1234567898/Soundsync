@@ -8,6 +8,7 @@ export const rooms = pgTable("rooms", {
   name: text("name").notNull(),
   code: varchar("code", { length: 6 }).notNull().unique(),
   hostId: varchar("host_id").notNull(),
+  isPublic: boolean("is_public").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

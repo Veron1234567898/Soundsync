@@ -4,25 +4,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Volume2, Users, Plus } from "lucide-react";
+import { Volume2, Users, Plus, Globe, Lock } from "lucide-react";
+import type { Room } from "@shared/schema";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [roomName, setRoomName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [userName, setUserName] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
   const { toast } = useToast();
 
+  // Query for public rooms
+  const { data: publicRooms = [], refetch: refetchPublicRooms } = useQuery({
+    queryKey: ['/api/rooms/public'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/rooms/public");
+      return response.json();
+    },
+  });
+
   const createRoomMutation = useMutation({
-    mutationFn: async (data: { name: string; hostId: string }) => {
+    mutationFn: async (data: { name: string; hostId: string; isPublic: boolean }) => {
       const response = await apiRequest("POST", "/api/rooms", data);
       return response.json();
     },
     onSuccess: (room) => {
       localStorage.setItem("participantName", userName || "Host");
+      // Refetch public rooms if we created a public room
+      if (isPublic) {
+        refetchPublicRooms();
+      }
       setLocation(`/room/${room.code}`);
     },
     onError: (error) => {
@@ -63,7 +79,7 @@ export default function Home() {
     }
     
     const hostId = userName || "Host";
-    createRoomMutation.mutate({ name: roomName, hostId });
+    createRoomMutation.mutate({ name: roomName, hostId, isPublic });
   };
 
   const handleJoinRoom = () => {
@@ -133,6 +149,29 @@ export default function Home() {
                   className="bg-discord-bg border-gray-600 text-white focus:border-discord-purple mt-1"
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {isPublic ? (
+                    <Globe className="h-4 w-4 text-discord-green" />
+                  ) : (
+                    <Lock className="h-4 w-4 text-gray-400" />
+                  )}
+                  <Label htmlFor="isPublic" className="text-gray-300">
+                    {isPublic ? "Public Room" : "Private Room"}
+                  </Label>
+                </div>
+                <Switch
+                  id="isPublic"
+                  checked={isPublic}
+                  onCheckedChange={setIsPublic}
+                  data-testid="switch-room-visibility"
+                />
+              </div>
+              {isPublic && (
+                <p className="text-sm text-gray-400">
+                  Your room will appear in the public server list for others to discover and join.
+                </p>
+              )}
               <Button
                 onClick={handleCreateRoom}
                 disabled={createRoomMutation.isPending || !roomName.trim()}
@@ -197,6 +236,53 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Public Server List */}
+        {publicRooms.length > 0 && (
+          <div className="mt-12">
+            <Card className="bg-discord-card border-gray-600">
+              <CardHeader>
+                <CardTitle className="flex items-center text-discord-green">
+                  <Globe className="mr-2" />
+                  Public Servers ({publicRooms.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3">
+                  {publicRooms.map((room: Room) => (
+                    <div
+                      key={room.id}
+                      className="flex items-center justify-between p-3 bg-discord-bg rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => {
+                        localStorage.setItem("participantName", userName || "Guest");
+                        setLocation(`/room/${room.code}`);
+                      }}
+                      data-testid={`card-public-room-${room.code}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-discord-green/20 p-2 rounded-full">
+                          <Volume2 className="h-4 w-4 text-discord-green" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white">{room.name}</h3>
+                          <p className="text-sm text-gray-400">Code: {room.code} • Host: {room.hostId}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black"
+                        data-testid={`button-join-${room.code}`}
+                      >
+                        Join
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Features */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
