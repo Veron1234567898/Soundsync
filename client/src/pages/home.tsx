@@ -20,7 +20,7 @@ export default function Home() {
   const { toast } = useToast();
 
   // Query for public rooms
-  const { data: publicRooms = [], refetch: refetchPublicRooms } = useQuery({
+  const { data: publicRooms = [], refetch: refetchPublicRooms, isRefetching } = useQuery({
     queryKey: ['/api/rooms/public'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/rooms/public");
@@ -251,10 +251,11 @@ export default function Home() {
                     variant="outline"
                     size="sm"
                     onClick={() => refetchPublicRooms()}
-                    className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black"
+                    disabled={isRefetching}
+                    className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black disabled:opacity-50"
                     data-testid="button-refresh-servers"
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
               </CardHeader>
