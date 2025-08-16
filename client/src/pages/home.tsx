@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +20,65 @@ export default function Home() {
   const [isPublic, setIsPublic] = useState(false);
   const { toast } = useToast();
 
+  // State to hold rooms with ping data
+  const [publicRoomsWithPing, setPublicRoomsWithPing] = useState<Room[]>([]);
+
   // Query for public rooms
-  const { data: publicRooms = [], refetch: refetchPublicRooms, isRefetching } = useQuery({
+  const { data: publicRooms = [], refetch: refetchPublicRooms, isRefetching } = useQuery<Room[]>({
     queryKey: ['/api/rooms/public'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/rooms/public");
       return response.json();
     },
   });
+
+  // Effect to measure ping and update rooms
+  useEffect(() => {
+    if (publicRooms.length > 0) {
+      // Measure ping to each room
+      const measurePing = async () => {
+        const updatedRooms = await Promise.all(
+          publicRooms.map(async (room) => {
+            try {
+              const startTime = Date.now();
+              const response = await fetch(`/api/rooms/${room.id}/ping`);
+              const ping = Date.now() - startTime;
+
+              if (response.ok) {
+                const pingData = await response.json();
+                console.log('Ping data for room:', room.code, pingData);
+              }
+
+              return {
+                ...room,
+                ping,
+                // Ensure location data is preserved
+                hostCountry: room.hostCountry || 'Unknown',
+                hostRegion: room.hostRegion,
+                hostCity: room.hostCity
+              };
+            } catch (error) {
+              console.error('Failed to measure ping for room:', room.id, error);
+              return {
+                ...room,
+                ping: 999,
+                hostCountry: room.hostCountry || 'Connection Error',
+                hostRegion: room.hostRegion,
+                hostCity: room.hostCity
+              };
+            }
+          })
+        );
+        console.log('Updated rooms with ping:', updatedRooms);
+        setPublicRoomsWithPing(updatedRooms);
+      };
+
+      measurePing();
+    } else {
+      setPublicRoomsWithPing([]);
+    }
+  }, [publicRooms]);
+
 
   const createRoomMutation = useMutation({
     mutationFn: async (data: { name: string; hostId: string; isPublic: boolean }) => {
@@ -250,12 +301,14 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center text-discord-green">
                   <Globe className="mr-2" />
-                  Public Servers ({publicRooms.length})
+                  Public Servers ({publicRoomsWithPing.length})
                 </CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => refetchPublicRooms()}
+                  onClick={() => {
+                    refetchPublicRooms();
+                  }}
                   disabled={isRefetching}
                   className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black disabled:opacity-50"
                   data-testid="button-refresh-servers"
@@ -265,9 +318,9 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent>
-              {publicRooms.length > 0 ? (
+              {publicRoomsWithPing.length > 0 ? (
                 <div className="grid gap-3">
-                  {publicRooms.map((room: Room) => (
+                  {publicRoomsWithPing.map((room: Room) => (
                     <div
                       className="flex items-center justify-between p-3 bg-discord-bg rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
                       onClick={() => {
