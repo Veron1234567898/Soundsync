@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Volume2, Users, Plus, Globe, Lock } from "lucide-react";
+import { Volume2, Users, Plus, Globe, Lock, RefreshCw } from "lucide-react";
 import type { Room } from "@shared/schema";
 
 export default function Home() {
@@ -242,10 +242,21 @@ export default function Home() {
           <div className="mt-12">
             <Card className="bg-discord-card border-gray-600">
               <CardHeader>
-                <CardTitle className="flex items-center text-discord-green">
-                  <Globe className="mr-2" />
-                  Public Servers ({publicRooms.length})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center text-discord-green">
+                    <Globe className="mr-2" />
+                    Public Servers ({publicRooms.length})
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchPublicRooms()}
+                    className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black"
+                    data-testid="button-refresh-servers"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3">
