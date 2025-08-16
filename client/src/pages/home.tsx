@@ -238,28 +238,28 @@ export default function Home() {
         </div>
 
         {/* Public Server List */}
-        {publicRooms.length > 0 && (
-          <div className="mt-12">
-            <Card className="bg-discord-card border-gray-600">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center text-discord-green">
-                    <Globe className="mr-2" />
-                    Public Servers ({publicRooms.length})
-                  </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => refetchPublicRooms()}
-                    disabled={isRefetching}
-                    className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black disabled:opacity-50"
-                    data-testid="button-refresh-servers"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
+        <div className="mt-12">
+          <Card className="bg-discord-card border-gray-600">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center text-discord-green">
+                  <Globe className="mr-2" />
+                  Public Servers ({publicRooms.length})
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchPublicRooms()}
+                  disabled={isRefetching}
+                  className="border-discord-green text-discord-green hover:bg-discord-green hover:text-black disabled:opacity-50"
+                  data-testid="button-refresh-servers"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {publicRooms.length > 0 ? (
                 <div className="grid gap-3">
                   {publicRooms.map((room: Room) => (
                     <div
@@ -297,10 +297,18 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              ) : (
+                <div className="text-center py-8">
+                  <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-300 mb-2">No Public Servers</h3>
+                  <p className="text-sm text-gray-400">
+                    No public rooms are currently available. Create a public room to get started!
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Features */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
