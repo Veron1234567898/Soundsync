@@ -17,6 +17,8 @@ Preferred communication style: Simple, everyday language.
 - **UI Enhancement**: Added toggle switch for room visibility and public server list display
 - **Schema Update**: Added `isPublic` boolean field to rooms table for room visibility control
 - **Frontend Enhancement**: Public rooms are displayed in a discoverable server list on the home page
+- **Auto-Cleanup**: Added automatic room deletion after 3 seconds of inactivity to prevent database clutter
+- **Smart Cleanup**: Cleanup timers are canceled when participants rejoin rooms
 
 ## System Architecture
 

@@ -38,6 +38,7 @@ interface WebSocketClient {
 
 const clients: Map<string, WebSocketClient> = new Map();
 const voiceParticipants: Map<string, Set<string>> = new Map(); // roomId -> Set of participantIds in voice chat
+const roomCleanupTimers: Map<string, NodeJS.Timeout> = new Map(); // roomId -> cleanup timer
 
 function generateRoomCode(): string {
   // Generate more secure room codes with better collision avoidance
@@ -93,6 +94,67 @@ async function addDefaultSounds(roomId: string, hostId: string): Promise<void> {
     } catch (error) {
       console.error(`Failed to add default sound ${defaultSound.name}:`, error);
     }
+  }
+}
+
+async function checkAndScheduleRoomCleanup(roomId: string) {
+  // Cancel any existing cleanup timer for this room
+  const existingTimer = roomCleanupTimers.get(roomId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    roomCleanupTimers.delete(roomId);
+  }
+
+  // Check if room has any active participants
+  const activeParticipants = await storage.getParticipantsByRoomId(roomId);
+  const hasActiveParticipants = activeParticipants.some(p => p.isActive);
+
+  if (!hasActiveParticipants) {
+    console.log(`No active participants in room ${roomId}, scheduling cleanup in 3 seconds`);
+    
+    // Schedule room deletion after 3 seconds
+    const cleanupTimer = setTimeout(async () => {
+      try {
+        // Double-check that room is still empty before deleting
+        const currentParticipants = await storage.getParticipantsByRoomId(roomId);
+        const stillEmpty = !currentParticipants.some(p => p.isActive);
+        
+        if (stillEmpty) {
+          console.log(`Cleaning up empty room ${roomId}`);
+          await storage.deleteRoom(roomId);
+          
+          // Clean up any remaining data structures
+          voiceParticipants.delete(roomId);
+          roomCleanupTimers.delete(roomId);
+          
+          // Remove any dead connections for this room
+          Array.from(clients.entries()).forEach(([clientId, client]) => {
+            if (client.roomId === roomId) {
+              clients.delete(clientId);
+            }
+          });
+          
+          console.log(`Room ${roomId} has been automatically deleted due to inactivity`);
+        } else {
+          console.log(`Room ${roomId} has active participants again, canceling cleanup`);
+          roomCleanupTimers.delete(roomId);
+        }
+      } catch (error) {
+        console.error(`Error during room cleanup for ${roomId}:`, error);
+        roomCleanupTimers.delete(roomId);
+      }
+    }, 3000); // 3 seconds
+
+    roomCleanupTimers.set(roomId, cleanupTimer);
+  }
+}
+
+function cancelRoomCleanup(roomId: string) {
+  const existingTimer = roomCleanupTimers.get(roomId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    roomCleanupTimers.delete(roomId);
+    console.log(`Canceled cleanup timer for room ${roomId}`);
   }
 }
 
@@ -210,6 +272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               roomId: message.roomId
             }));
             
+            // Cancel any pending room cleanup since someone joined
+            cancelRoomCleanup(message.roomId);
+            
             // Small delay to ensure client is properly registered before broadcasting
             setTimeout(() => {
               // Notify others in room about new participant
@@ -309,6 +374,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               await storage.updateParticipant(message.participantId, { isActive: false });
               console.log(`Marked participant ${message.participantId} as inactive`);
+              
+              // Check if room should be cleaned up after participant leaves
+              await checkAndScheduleRoomCleanup(message.roomId);
             } catch (error) {
               console.error('Failed to update participant status:', error);
             }
@@ -363,6 +431,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await storage.updateParticipant(client.participantId, { isActive: false });
           console.log(`Marked participant ${client.participantId} as inactive on disconnect`);
+          
+          // Check if room should be cleaned up after participant disconnects
+          await checkAndScheduleRoomCleanup(client.roomId);
         } catch (error) {
           console.error('Failed to update participant status on disconnect:', error);
         }
@@ -467,11 +538,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: participantData.name,
             isActive: true
           });
+          
+          // Cancel any pending room cleanup since host returned
+          cancelRoomCleanup(participantData.roomId);
+          
           return res.json(updatedHost);
         }
       }
       
       const participant = await storage.createParticipant(participantData);
+      
+      // Cancel any pending room cleanup since someone joined
+      cancelRoomCleanup(participantData.roomId);
+      
       res.json(participant);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
