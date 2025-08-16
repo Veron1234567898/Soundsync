@@ -254,11 +254,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async cleanupAudioFile(fileName: string): Promise<void> {
+    // Don't delete default sound files, they should be kept for future rooms
+    if (fileName.startsWith('default-')) {
+      console.log(`Skipping deletion of default sound file: ${fileName}`);
+      return;
+    }
+    
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
       const filePath = path.join(process.cwd(), 'uploads', fileName);
       await fs.unlink(filePath);
+      console.log(`Deleted audio file: ${fileName}`);
     } catch (error) {
       // File might not exist, that's okay
       console.warn(`Could not delete audio file ${fileName}:`, error);
