@@ -10,6 +10,9 @@ export const rooms = pgTable("rooms", {
   code: varchar("code", { length: 6 }).notNull().unique(),
   hostId: varchar("host_id").notNull(),
   isPublic: boolean("is_public").default(false).notNull(),
+  hostCountry: text("host_country"),
+  hostRegion: text("host_region"),
+  hostCity: text("host_city"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -51,6 +54,7 @@ export const insertParticipantSchema = createInsertSchema(participants).omit({
 export type InsertRoom = z.infer<typeof insertRoomSchema>;
 export type Room = InferSelectModel<typeof rooms> & {
   participantCount?: number;
+  ping?: number;
 };
 export type InsertSound = z.infer<typeof insertSoundSchema>;
 export type Sound = typeof sounds.$inferSelect;

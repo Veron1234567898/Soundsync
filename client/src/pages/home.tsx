@@ -269,7 +269,6 @@ export default function Home() {
                 <div className="grid gap-3">
                   {publicRooms.map((room: Room) => (
                     <div
-                      key={room.id}
                       className="flex items-center justify-between p-3 bg-discord-bg rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
                       onClick={() => {
                         localStorage.setItem("participantName", userName || "Guest");
@@ -281,9 +280,37 @@ export default function Home() {
                         <div className="w-10 h-10 bg-discord-purple rounded-lg flex items-center justify-center mr-3">
                           <Volume2 className="w-5 h-5 text-white" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-medium text-white">{room.name}</h3>
-                          <p className="text-sm text-gray-400">Code: {room.code} • Host: {room.hostId}</p>
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm text-gray-400">Code: {room.code} • Host: {room.hostId}</p>
+                            <div className="flex items-center space-x-4">
+                              <div className="flex items-center space-x-1">
+                                <Globe className="w-3 h-3 text-discord-purple" />
+                                <span className="text-xs text-gray-400">
+                                  {room.hostCity && `${room.hostCity}, `}
+                                  {room.hostRegion && `${room.hostRegion}, `}
+                                  {room.hostCountry || 'Unknown'}
+                                </span>
+                              </div>
+                              {room.ping !== undefined && (
+                                <div className="flex items-center space-x-1">
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    room.ping < 50 ? 'bg-green-400' :
+                                    room.ping < 100 ? 'bg-yellow-400' :
+                                    room.ping < 200 ? 'bg-orange-400' : 'bg-red-400'
+                                  }`} />
+                                  <span className={`text-xs ${
+                                    room.ping < 50 ? 'text-green-400' :
+                                    room.ping < 100 ? 'text-yellow-400' :
+                                    room.ping < 200 ? 'text-orange-400' : 'text-red-400'
+                                  }`}>
+                                    {room.ping}ms
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">

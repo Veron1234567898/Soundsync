@@ -457,6 +457,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const roomData = insertRoomSchema.parse(req.body);
       
+      // Get host location information
+      let hostLocation = {
+        hostCountry: null,
+        hostRegion: null,
+        hostCity: null
+      };
+      
+      try {
+        // Get client IP (handling potential proxies)
+        const clientIP = req.headers['x-forwarded-for'] || 
+                        req.headers['x-real-ip'] || 
+                        req.connection.remoteAddress || 
+                        req.socket.remoteAddress ||
+                        (req.connection.socket ? req.connection.socket.remoteAddress : null);
+        
+        console.log('Client IP for room creation:', clientIP);
+        
+        // Only try to get location for non-local IPs
+        if (clientIP && !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(clientIP.toString())) {
+          const locationResponse = await fetch(`https://ipapi.co/${clientIP}/json/`);
+          if (locationResponse.ok) {
+            const locationData = await locationResponse.json();
+            hostLocation = {
+              hostCountry: locationData.country_name || null,
+              hostRegion: locationData.region || null,
+              hostCity: locationData.city || null
+            };
+            console.log('Host location detected:', hostLocation);
+          }
+        } else {
+          console.log('Local IP detected, using default location');
+          hostLocation = {
+            hostCountry: "Local Network",
+            hostRegion: "Replit",
+            hostCity: "Development"
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to get host location:', error);
+        // Use default values for location
+        hostLocation = {
+          hostCountry: "Unknown",
+          hostRegion: null,
+          hostCity: null
+        };
+      }
+      
       // Check for duplicate room codes and regenerate if needed
       let code: string;
       let attempts = 0;
@@ -478,7 +525,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: roomData.name, 
         code, 
         hostId: roomData.hostId,
-        isPublic: roomData.isPublic || false
+        isPublic: roomData.isPublic || false,
+        ...hostLocation
       });
       
       // Create host participant with the actual host name
@@ -526,6 +574,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/ping', (req, res) => {
     res.json({ timestamp: Date.now(), status: 'ok' });
+  });
+
+  // Ping endpoint for specific rooms
+  app.get('/api/rooms/:roomId/ping', async (req, res) => {
+    try {
+      const room = await storage.getRoomById(req.params.roomId);
+      if (!room) {
+        return res.status(404).json({ error: 'Room not found' });
+      }
+      res.json({ 
+        timestamp: Date.now(), 
+        status: 'ok',
+        roomId: req.params.roomId,
+        location: {
+          country: room.hostCountry,
+          region: room.hostRegion,
+          city: room.hostCity
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
   });
 
   // Clean up inactive rooms
